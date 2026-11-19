@@ -69,3 +69,5 @@ ctx.drawImage(montanha, x, y); // Aplica transparência dinâmica
 
 ## 📄 Apresentação do Projeto
 Os slides completos utilizados na apresentação estão disponíveis neste repositório no arquivo `apresentacao-veyra.pdf`.
+
+
