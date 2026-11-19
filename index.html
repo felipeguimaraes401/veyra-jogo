@@ -2,27 +2,1774 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Veyra — Fragmentos de um Reino</title>
+    <!-- Tailwind CSS para UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600&display=swap');
 
-    <link rel="stylesheet" href="css/style.css">
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #eaddc5; /* Fundo Pergaminho Vintage */
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Design Tático Artesanal (Pergaminho e Tinta) */
+        .glass-panel {
+            background: #f4ecd8;
+            border: 3px solid #3e2723;
+            box-shadow: 6px 6px 0px #3e2723;
+        }
+
+        .glass-panel-dark {
+            background: #2c1e16;
+            border: 3px solid #8d6e63;
+            box-shadow: 6px 6px 0px #000000;
+        }
+
+        /* Canvas Fullscreen */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* UI Containers */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        .hidden-ui {
+            display: none !important;
+        }
+    </style>
 </head>
-<body>
+<body class="text-slate-800">
 
-    <!-- Aqui ficam os menus HTML -->
-
+    <div class="fog-container"></div>
     <canvas id="gameCanvas"></canvas>
 
-    <script src="js/save.js"></script>
-    <script src="js/units.js"></script>
-    <script src="js/map.js"></script>
-    <script src="js/campaign.js"></script>
-    <script src="js/shop.js"></script>
-    <script src="js/combat.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/main.js"></script>
+    <!-- UI LAYER 1: MENU INICIAL -->
+    <div id="ui-menu" class="ui-layer flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div class="interactive glass-panel flex flex-col items-center max-w-md w-full text-center p-10 relative">
+            
+            <!-- Detalhe decorativo nos cantos -->
+            <div class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#3e2723]"></div>
+            <div class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#3e2723]"></div>
+            <div class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#3e2723]"></div>
+            <div class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#3e2723]"></div>
 
+            <!-- BRASÃO VETORIAL LIMPO -->
+            <div class="mb-4 drop-shadow-md">
+                <svg width="90" height="110" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 10 H110 V90 L60 125 L10 90 Z" fill="#2c1e16" stroke="#3e2723" stroke-width="4"/>
+                    <path d="M20 20 H100 V82 L60 112 L20 82 Z" fill="#3e2723"/>
+                    <path d="M60 30 L68 45 L82 40 L74 58 L85 70 H35 L46 58 L38 40 L52 45 Z" fill="#d97706"/>
+                    <circle cx="60" cy="80" r="6" fill="#f4ecd8"/>
+                </svg>
+            </div>
+
+            <h1 class="title-font text-5xl font-black tracking-wider text-[#2c1e16] mb-1 drop-shadow-sm">VEYRA</h1>
+            <p class="text-[10px] uppercase tracking-[0.3em] font-bold text-[#5d4037] mb-8 border-b border-[#d7ccc8] pb-2 px-4">Jogo de Estratégia e Tática</p>
+
+            <div class="w-full space-y-3">
+                <button onclick="startNewCampaign()" class="w-full py-4 bg-[#3e2723] hover:bg-[#2c1e16] text-[#f4ecd8] font-bold rounded-none border-2 border-[#3e2723] shadow-[3px_3px_0px_#1a120b] transition-all">
+                    NOVA CAMPANHA
+                </button>
+                <button id="btn-continue" onclick="continueCampaign()" class="w-full py-4 bg-[#ebe1cc] hover:bg-[#e0d3b8] text-[#3e2723] font-bold rounded-none border-2 border-[#3e2723] shadow-[3px_3px_0px_#1a120b] transition-all hidden-ui">
+                    CONTINUAR JOGO
+                </button>
+                <button onclick="showHowToPlay()" class="w-full py-3 bg-[#d7ccc8] hover:bg-[#bcaaa4] text-[#4e342e] font-semibold rounded-none border-2 border-[#8d6e63] transition-all">
+                    COMO JOGAR
+                </button>
+            </div>
+
+            <p class="text-[10px] text-[#8d6e63] mt-8 font-mono">Build 1.2 — Artefacto Tático</p>
+        </div>
+    </div>
+
+    <!-- UI LAYER 2: TELA COMO JOGAR -->
+    <div id="ui-how-to-play" class="ui-layer hidden-ui flex items-center justify-center p-6 bg-slate-900/40">
+        <div class="interactive glass-panel max-w-xl w-full p-8 text-slate-800">
+            <h2 class="title-font text-3xl font-bold mb-4 text-[#3e2723] text-center">HISTÓRIA E MANUAL</h2>
+            
+            <div class="space-y-4 text-sm text-[#5d4037] leading-relaxed max-h-[60vh] overflow-y-auto pr-2 mb-6 font-sans">
+                <div class="bg-[#ebe1cc] p-4 border-l-4 border-[#3e2723]">
+                    <h3 class="font-bold text-[#3e2723] mb-1 uppercase tracking-wider text-xs">Objetivo</h3>
+                    <p class="text-[#5d4037]">Reconquiste as 12 ilhas do arquipélago de Veyra. Planeie as suas rotas marítimas na carta de navegação e vença os combates por turnos.</p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-[#3e2723] mb-2 uppercase tracking-wider text-xs">Regras de Combate</h3>
+                    <ul class="space-y-2 text-xs">
+                        <li class="border-b border-[#d7ccc8] pb-1"><strong>Navegação:</strong> Selecione ilhas conectadas por linhas tracejadas na carta marítima.</li>
+                        <li class="border-b border-[#d7ccc8] pb-1"><strong>Visão Tática:</strong> Unidades e posições de ataque atrás de montanhas ficam visíveis tornando o relevo transparente. Pode clicar diretamente nas unidades ocultas.</li>
+                        <li class="border-b border-[#d7ccc8] pb-1"><strong>Agrupar Tropas (NOVO):</strong> Mova uma tropa para cima de outra <strong>do mesmo tipo</strong> (destaque verde) para as fundir e recuperar Vida (HP)!</li>
+                        <li class="border-b border-[#d7ccc8] pb-1"><strong>Classes de Unidades:</strong>
+                            <span class="block ml-2 mt-1">• <strong>Guerreiro:</strong> Linha de frente (6 HP, Mov 2, Alcance 1, Dano 2).</span>
+                            <span class="block ml-2">• <strong>Arqueiro:</strong> Ataque à distância (3 HP, Mov 2, Alcance 4, Dano 2).</span>
+                            <span class="block ml-2">• <strong>Escudeiro:</strong> Defesa extrema (8 HP, Mov 1, Alcance 1, Dano 1).</span>
+                            <span class="block ml-2">• <strong>Vanguarda:</strong> Rápida e letal (4 HP, Mov 3, Alcance 1, Dano 3).</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="hideHowToPlay()" class="w-full py-3 bg-[#3e2723] hover:bg-[#2c1e16] text-[#f4ecd8] font-bold transition border-2 border-[#3e2723]">
+                VOLTAR AO MENU
+            </button>
+        </div>
+    </div>
+
+    <!-- UI LAYER 3: CARTA DE NAVEGAÇÃO -->
+    <div id="ui-select" class="ui-layer hidden-ui flex flex-col justify-between p-6">
+        <div class="interactive glass-panel p-4 flex justify-between items-center max-w-4xl mx-auto w-full">
+            <div>
+                <h2 class="title-font text-xl font-bold text-slate-900">CARTA DE NAVEGAÇÃO</h2>
+                <p class="text-xs text-slate-600 font-mono">SELEÇÃO DE ALVO E ROTAS</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-500 block uppercase">Tesouro</span>
+                    <span id="stat-gold" class="title-font font-bold text-amber-700">100 Ouro</span>
+                </div>
+                <button onclick="openShop()" class="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-400 text-xs transition">
+                    ACAMPAMENTO (LOJA)
+                </button>
+                <button onclick="pauseGame()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold border border-slate-400 text-xs transition">
+                    PAUSA (ESC)
+                </button>
+            </div>
+        </div>
+
+        <div id="island-card" class="interactive glass-panel p-6 max-w-md mx-auto w-full hidden-ui relative">
+            <button onclick="closeIslandCard()" class="absolute top-2 right-2 text-slate-600 hover:text-slate-900 font-bold px-2">✕</button>
+            <div class="flex justify-between items-start mb-2">
+                <h3 id="card-name" class="title-font text-2xl font-bold text-slate-900">Aethelgard</h3>
+                <span id="card-biome" class="text-[10px] px-2 py-1 bg-slate-200 font-bold uppercase text-slate-800 border border-slate-400">Normal</span>
+            </div>
+            <p id="card-desc" class="text-xs text-slate-600 mb-4">Território inicial.</p>
+            <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                <div class="bg-slate-100 p-2 border border-slate-300">
+                    <span class="text-slate-500 text-[10px] block uppercase">Dificuldade</span>
+                    <strong id="card-diff" class="text-slate-800">Baixa</strong>
+                </div>
+                <div class="bg-slate-100 p-2 border border-slate-300">
+                    <span class="text-slate-500 text-[10px] block uppercase">Guarnição</span>
+                    <strong id="card-garrison" class="text-slate-800">4 Unidades</strong>
+                </div>
+            </div>
+            <button id="btn-attack" onclick="confirmAttack()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold transition">
+                INICIAR BATALHA
+            </button>
+        </div>
+
+        <div></div>
+    </div>
+
+    <!-- UI LAYER 4: PAINEL DE COMBATE -->
+    <div id="ui-combat" class="ui-layer hidden-ui flex flex-col justify-between p-6">
+        <div class="interactive glass-panel p-4 flex justify-between items-center max-w-2xl mx-auto w-full">
+            <div>
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">SETOR</span>
+                <h2 id="combat-title" class="title-font text-lg font-bold text-slate-900">ILHA</h2>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div id="turn-indicator" class="px-4 py-2 bg-slate-100 border-2 border-slate-900 text-slate-900 font-bold text-xs uppercase">
+                    TURNO DO JOGADOR
+                </div>
+                <button id="btn-pass-turn" onclick="endPlayerTurn()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition">
+                    PASSAR TURNO
+                </button>
+                <button onclick="rotateMap()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 border border-slate-400 text-slate-800 font-bold text-xs transition" title="Girar Mapa (Tecla R)">
+                    GIRAR ↻
+                </button>
+                <button onclick="pauseGame()" class="px-3 py-2 bg-slate-100 border border-slate-400 text-slate-800 font-bold text-xs transition">
+                    PAUSA (ESC)
+                </button>
+            </div>
+        </div>
+
+        <!-- PAINEL DE INFORMAÇÃO DA UNIDADE -->
+        <div class="interactive glass-panel p-4 max-w-xs absolute bottom-6 left-6 hidden-ui" id="unit-info-panel">
+            <h3 id="unit-name" class="font-bold text-lg text-slate-900">Guerreiro</h3>
+            <p class="text-xs text-slate-600 mb-2">Fação do Jogador</p>
+            <div class="flex flex-wrap gap-2 text-[10px] font-bold text-slate-800">
+                <span class="bg-[#ffcdd2] px-2 py-1 border border-[#b71c1c]">HP: <span id="unit-hp">5/5</span></span>
+                <span class="bg-[#c8e6c9] px-2 py-1 border border-[#1b5e20]">MOV: <span id="unit-mov">2</span></span>
+                <span class="bg-[#e1bee7] px-2 py-1 border border-[#4a148c]">ALC: <span id="unit-range">1</span></span>
+                <span class="bg-[#ffecb3] px-2 py-1 border border-[#ff6f00]">DANO: <span id="unit-dmg">2</span></span>
+            </div>
+        </div>
+
+        <!-- PAINEL DE POSICIONAMENTO (DEPLOYMENT) -->
+        <div class="interactive glass-panel p-4 max-w-xl absolute bottom-6 left-1/2 -translate-x-1/2 hidden-ui z-20" id="deployment-panel">
+            <div class="text-center mb-3">
+                <h3 class="font-bold text-sm text-slate-900">POSICIONE O SEU EXÉRCITO</h3>
+                <p class="text-[10px] text-amber-700 font-bold bg-amber-100 border border-amber-300 px-2 py-1 rounded inline-block mt-1" id="deploy-limit-text">TROPAS: 0 / 0</p>
+            </div>
+            <div id="deploy-roster" class="flex gap-2 flex-wrap justify-center mb-4"></div>
+            <button onclick="finishDeployment()" class="w-full py-2 bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
+                CONFIRMAR E INICIAR BATALHA
+            </button>
+        </div>
+
+        <div></div>
+    </div>
+
+    <!-- UI LAYER 5: MENU DE PAUSA -->
+    <div id="ui-pause" class="ui-layer hidden-ui flex items-center justify-center p-6 bg-slate-900/60 z-50">
+        <div class="interactive glass-panel-dark max-w-sm w-full p-6 text-center text-white space-y-3">
+            <h3 class="title-font text-2xl font-bold mb-4 border-b border-slate-700 pb-2">PAUSA E OPÇÕES</h3>
+            <button onclick="resumeGame()" class="w-full py-3 bg-slate-100 hover:bg-white text-slate-900 font-bold transition">
+                CONTINUAR
+            </button>
+            <button onclick="saveGameProgress(true)" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 font-bold transition">
+                SALVAR PROGRESSO
+            </button>
+            <button id="btn-quit-select" onclick="quitToSelect()" class="w-full py-3 bg-amber-800/90 hover:bg-amber-700 border border-amber-600 font-bold transition">
+                CARTA DE NAVEGAÇÃO
+            </button>
+            <button id="btn-quit-menu" onclick="quitToMainMenu()" class="w-full py-3 bg-red-900/90 hover:bg-red-800 border border-red-700 font-bold transition">
+                SAIR PARA O MENU PRINCIPAL
+            </button>
+        </div>
+    </div>
+
+    <!-- UI LAYER 6: LOJA / ACAMPAMENTO -->
+    <div id="ui-shop" class="ui-layer hidden-ui flex items-center justify-center p-6 bg-slate-900/60 z-40">
+        <div class="interactive glass-panel max-w-lg w-full p-6 text-slate-800">
+            <div class="flex justify-between items-center mb-4 border-b border-[#d7ccc8] pb-2">
+                <h3 class="title-font text-2xl font-bold text-[#3e2723]">ACAMPAMENTO</h3>
+                <span class="title-font font-bold text-amber-700" id="shop-gold">0 Ouro</span>
+            </div>
+            <div class="space-y-3 mb-6 max-h-[50vh] overflow-y-auto pr-2">
+                <div class="flex justify-between items-center bg-[#ebe1cc] p-3 border border-[#d7ccc8]">
+                    <div>
+                        <strong class="text-[#3e2723] block text-sm">Armaduras Forjadas</strong>
+                        <span class="text-xs text-[#5d4037]">+2 HP (Todas as tuas tropas)</span>
+                    </div>
+                    <button onclick="buyUpgrade('hp', 100)" class="px-3 py-2 bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
+                        100 Ouro
+                    </button>
+                </div>
+                <div class="flex justify-between items-center bg-[#ebe1cc] p-3 border border-[#d7ccc8]">
+                    <div>
+                        <strong class="text-[#3e2723] block text-sm">Contratar Guerreiro</strong>
+                        <span class="text-xs text-[#5d4037]">Adiciona 1 Guerreiro ao teu exército</span>
+                    </div>
+                    <button onclick="buyTroop('warrior', 100)" class="px-3 py-2 bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
+                        100 Ouro
+                    </button>
+                </div>
+                <div class="flex justify-between items-center bg-[#ebe1cc] p-3 border border-[#d7ccc8]">
+                    <div>
+                        <strong class="text-[#3e2723] block text-sm">Contratar Arqueiro</strong>
+                        <span class="text-xs text-[#5d4037]">Adiciona 1 Arqueiro ao teu exército</span>
+                    </div>
+                    <button onclick="buyTroop('archer', 150)" class="px-3 py-2 bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
+                        150 Ouro
+                    </button>
+                </div>
+                <div class="flex justify-between items-center bg-[#ebe1cc] p-3 border border-[#d7ccc8]">
+                    <div>
+                        <strong class="text-[#3e2723] block text-sm">Contratar Escudeiro</strong>
+                        <span class="text-xs text-[#5d4037]">Adiciona 1 Escudeiro ao teu exército</span>
+                    </div>
+                    <button onclick="buyTroop('shield', 200)" class="px-3 py-2 bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition">
+                        200 Ouro
+                    </button>
+                </div>
+            </div>
+            <div class="text-center mb-4 text-xs font-bold text-slate-600">
+                Tamanho do Exército: <span id="army-size-text">4/12 Tropas</span>
+            </div>
+            <button onclick="closeShop()" class="w-full py-3 bg-[#3e2723] hover:bg-[#2c1e16] text-[#f4ecd8] font-bold transition border-2 border-[#3e2723]">
+                VOLTAR À CARTA
+            </button>
+        </div>
+    </div>
+
+    <!-- UI LAYER 7: MENSAGENS E ALERTAS (NOVO) -->
+    <div id="ui-message" class="ui-layer hidden-ui flex items-center justify-center p-6 bg-slate-900/80 z-[60]">
+        <div class="interactive glass-panel max-w-sm w-full p-8 text-center">
+            <h2 id="msg-title" class="title-font text-3xl font-bold mb-2 text-[#3e2723]">VITÓRIA!</h2>
+            <p id="msg-desc" class="text-sm text-[#5d4037] mb-6">Conquistaste a ilha.</p>
+            <button onclick="closeMessage()" class="w-full py-3 bg-[#3e2723] hover:bg-[#2c1e16] text-[#f4ecd8] font-bold transition border-2 border-[#3e2723]">
+                CONTINUAR
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGICA DO JOGO EM JAVASCRIPT -->
+    <script>
+        // ESTADOS DE JOGO
+        let GAME_STATE = 'MENU'; 
+        let TURN_STATE = 'PLAYER'; 
+        let IS_PAUSED = false;
+
+        const ISLANDS = [
+            { id: 'aethelgard', name: 'Aethelgard', x: 20, y: 50, diff: 10, biome: 'forest', desc: 'Sede da tua aliança. Florestas densas e colinas suaves.', seed: 12, garrison: 3 },
+            { id: 'forte_salgado', name: 'Forte Salgado', x: 35, y: 25, diff: 12, biome: 'desert', desc: 'Fortaleza no deserto com desfiladeiros perigosos.', seed: 45, garrison: 4 },
+            { id: 'porto_ancora', name: 'Porto de Âncora', x: 35, y: 75, diff: 12, biome: 'normal', desc: 'Centro de navegação costeiro com praias de areia.', seed: 89, garrison: 4 },
+            { id: 'valle_oculto', name: 'Vale Oculto', x: 50, y: 50, diff: 14, biome: 'swamp', desc: 'Pântano denso com lodo e visibilidade reduzida.', seed: 33, garrison: 5 },
+            { id: 'pico_gelo', name: 'Pico de Gelo', x: 65, y: 20, diff: 16, biome: 'snow', desc: 'Montanha gelada rodeada de gelo escorregadio.', seed: 77, garrison: 6 },
+            { id: 'enseada_morta', name: 'Enseada Morta', x: 65, y: 80, diff: 14, biome: 'swamp', desc: 'Terras alagadas cheias de emboscadas.', seed: 21, garrison: 5 },
+            { id: 'pontal_bruma', name: 'Pontal da Bruma', x: 75, y: 50, diff: 16, biome: 'forest', desc: 'Planalto rochoso de difícil acesso oculto por árvores.', seed: 64, garrison: 6 },
+            { id: 'coroa_rei', name: 'Coroa do Rei', x: 85, y: 25, diff: 18, biome: 'snow', desc: 'Antiga fortaleza real sob neve perpétua.', seed: 95, garrison: 8 },
+            { id: 'ilha_ferro', name: 'Ilha de Ferro', x: 85, y: 75, diff: 16, biome: 'desert', desc: 'Minas abandonadas cercadas por canyons de areia.', seed: 18, garrison: 6 },
+            { id: 'garganta_sal', name: 'Garganta de Sal', x: 10, y: 20, diff: 12, biome: 'desert', desc: 'Posto avançado em terras áridas.', seed: 52, garrison: 4 },
+            { id: 'rocha_negra', name: 'Rocha Negra', x: 10, y: 80, diff: 12, biome: 'volcanic', desc: 'Terreno vulcânico com rios de lava ardente.', seed: 83, garrison: 5 },
+            { id: 'santuario_velho', name: 'Santuário Velho', x: 92, y: 50, diff: 20, biome: 'volcanic', desc: 'O bastião final. Terreno vulcânico extremo.', seed: 99, garrison: 10 }
+        ];
+
+        const ROUTES = [
+            ['aethelgard', 'forte_salgado'], ['aethelgard', 'porto_ancora'], ['aethelgard', 'garganta_sal'], ['aethelgard', 'rocha_negra'],
+            ['forte_salgado', 'valle_oculto'], ['porto_ancora', 'valle_oculto'], ['valle_oculto', 'pico_gelo'],
+            ['valle_oculto', 'enseada_morta'], ['pico_gelo', 'pontal_bruma'], ['enseada_morta', 'pontal_bruma'],
+            ['pontal_bruma', 'coroa_rei'], ['pontal_bruma', 'ilha_ferro'], ['coroa_rei', 'santuario_velho'], ['ilha_ferro', 'santuario_velho']
+        ];
+
+        let campaign = {
+            ownedIslands: ['aethelgard'],
+            gold: 100,
+            army: ['warrior', 'shield', 'archer', 'vanguard'],
+            inventory: [],
+            upgrades: { hp: 0 }
+        };
+
+        let canvas, ctx;
+        let selectedIsland = null;
+        let mapData = [], decorData = [], itemsData = [], units = [];
+        let highlightedTiles = [];
+        let selectedUnit = null;
+        let selectedIslandId = null;
+        
+        // Variáveis de Controle de Mapa e Rotação
+        let currentMapSize = 10;
+        let mapRotation = 0; // 0, 1, 2, 3 (Multiplos de 90 graus)
+
+        // Sistema de Posicionamento e Economia em Batalha
+        let pendingGold = 0;
+        let availableRoster = [];
+        let selectedDeployUnitIndex = -1;
+        let deployLimit = 0;
+        let deployedCount = 0;
+        let objectivePos = null;
+
+        const UNIT_NAMES = {
+            'warrior': 'Guerreiro (Infantaria)',
+            'shield': 'Escudeiro (Pavês)',
+            'archer': 'Arqueiro Tático',
+            'vanguard': 'Vanguarda (Cavalaria)'
+        };
+
+        const TILE_WIDTH = 64;
+        const TILE_HEIGHT = 32;
+        const BLOCK_DEPTH = 24;
+
+        const COLORS = {
+            // Paleta de Tabuleiro Tático (Mais vibrante e natural)
+            waterTop: '#4fc3f7', waterLeft: '#29b6f6', waterRight: '#0288d1',
+            sandTop: '#f5e6cb', sandLeft: '#e4d1b0', sandRight: '#ceb893',
+            grassTop: '#8bc34a', grassLeft: '#689f38', grassRight: '#33691e',
+            rockTop: '#cfd8dc', rockLeft: '#90a4ae', rockRight: '#607d8b',
+            darkRockTop: '#546e7a', darkRockLeft: '#37474f', darkRockRight: '#263238',
+            snowTop: '#ffffff', snowLeft: '#eceff1', snowRight: '#cfd8dc',
+            iceTop: '#81d4fa', iceLeft: '#29b6f6', iceRight: '#0277bd',
+            mudTop: '#7c8658', mudLeft: '#5c663a', mudRight: '#404a23',
+            lavaTop: '#ff5722', lavaLeft: '#e64a19', lavaRight: '#bf360c',
+            playerBanner: '#1d4ed8', enemyBanner: '#b91c1c'
+        };
+
+        window.onload = function() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            canvas.addEventListener('click', handleCanvasClick);
+
+            // Tecla ESC abre/fecha o menu de pausa de forma universal
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (GAME_STATE === 'SELECT' || GAME_STATE === 'COMBAT') {
+                        if (IS_PAUSED) resumeGame();
+                        else pauseGame();
+                    }
+                }
+                if ((e.key === 'r' || e.key === 'R') && GAME_STATE === 'COMBAT') {
+                    rotateMap();
+                }
+            });
+
+            checkSaveData();
+            gameLoop();
+        };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function startNewCampaign() {
+            campaign = { 
+                ownedIslands: ['aethelgard'], 
+                gold: 100, 
+                army: ['warrior', 'shield', 'archer', 'vanguard'], 
+                inventory: [], 
+                upgrades: { hp: 0 } 
+            };
+            saveGameProgress();
+            openSelectScreen();
+        }
+
+        function continueCampaign() {
+            let saved = localStorage.getItem('veyra_save');
+            if (saved) {
+                campaign = JSON.parse(saved);
+                if (!campaign.upgrades) campaign.upgrades = { hp: 0 }; 
+                if (!campaign.army) campaign.army = ['warrior', 'shield', 'archer', 'vanguard'];
+                openSelectScreen();
+            }
+        }
+
+        function checkSaveData() {
+            let saved = localStorage.getItem('veyra_save');
+            if (saved) {
+                document.getElementById('btn-continue').classList.remove('hidden-ui');
+            }
+        }
+
+        function showHowToPlay() {
+            document.getElementById('ui-how-to-play').classList.remove('hidden-ui');
+        }
+
+        function hideHowToPlay() {
+            document.getElementById('ui-how-to-play').classList.add('hidden-ui');
+        }
+
+        function openSelectScreen() {
+            GAME_STATE = 'SELECT';
+            IS_PAUSED = false;
+
+            // Prevenir Soft-Lock absoluto: Se o jogador ficou sem tropas (porque abandonou batalhas),
+            // a aliança envia imediatamente reforços para que possa continuar a jogar!
+            if (campaign.army.length === 0) {
+                campaign.army = ['warrior', 'warrior']; 
+            }
+
+            document.getElementById('ui-menu').classList.add('hidden-ui');
+            document.getElementById('ui-select').classList.remove('hidden-ui');
+            document.getElementById('ui-combat').classList.add('hidden-ui');
+            document.getElementById('ui-pause').classList.add('hidden-ui');
+            document.getElementById('stat-gold').innerText = campaign.gold + ' Ouro';
+            closeIslandCard();
+        }
+
+        // Funções da Loja
+        function openShop() {
+            document.getElementById('ui-shop').classList.remove('hidden-ui');
+            document.getElementById('shop-gold').innerText = campaign.gold + ' Ouro';
+            document.getElementById('army-size-text').innerText = campaign.army.length + '/12 Tropas';
+        }
+
+        function closeShop() {
+            document.getElementById('ui-shop').classList.add('hidden-ui');
+            document.getElementById('stat-gold').innerText = campaign.gold + ' Ouro';
+        }
+
+        function buyUpgrade(type, cost) {
+            if (campaign.gold >= cost) {
+                campaign.gold -= cost;
+                campaign.upgrades[type] += (type === 'hp' ? 2 : 1);
+                saveGameProgress();
+                document.getElementById('shop-gold').innerText = campaign.gold + ' Ouro';
+                
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "COMPRADO!";
+                btn.classList.add("bg-green-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-green-700"); }, 1000);
+            } else {
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "SEM OURO!";
+                btn.classList.add("bg-red-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-red-700"); }, 1000);
+            }
+        }
+
+        function buyTroop(type, cost) {
+            if (campaign.army.length >= 12) {
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "EXÉRCITO CHEIO!";
+                btn.classList.add("bg-red-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-red-700"); }, 1000);
+                return;
+            }
+            if (campaign.gold >= cost) {
+                campaign.gold -= cost;
+                campaign.army.push(type);
+                saveGameProgress();
+                document.getElementById('shop-gold').innerText = campaign.gold + ' Ouro';
+                document.getElementById('army-size-text').innerText = campaign.army.length + '/12 Tropas';
+                
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "CONTRATADO!";
+                btn.classList.add("bg-green-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-green-700"); }, 1000);
+            } else {
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "SEM OURO!";
+                btn.classList.add("bg-red-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-red-700"); }, 1000);
+            }
+        }
+
+        function pauseGame() {
+            IS_PAUSED = true;
+            document.getElementById('ui-pause').classList.remove('hidden-ui');
+
+            let quitBtn = document.getElementById('btn-quit-select');
+            let quitMenuBtn = document.getElementById('btn-quit-menu');
+
+            if (GAME_STATE === 'COMBAT') {
+                quitBtn.innerText = "ABANDONAR BATALHA (PERDER TROPAS)";
+                quitBtn.classList.replace('bg-amber-800/90', 'bg-red-800/90');
+                quitBtn.classList.replace('hover:bg-amber-700', 'hover:bg-red-700');
+                quitBtn.classList.replace('border-amber-600', 'border-red-600');
+                
+                quitMenuBtn.classList.add('hidden-ui');
+            } else {
+                quitBtn.innerText = "CARTA DE NAVEGAÇÃO";
+                quitBtn.classList.replace('bg-red-800/90', 'bg-amber-800/90');
+                quitBtn.classList.replace('hover:bg-red-700', 'hover:bg-amber-700');
+                quitBtn.classList.replace('border-red-600', 'border-amber-600');
+                
+                quitMenuBtn.classList.remove('hidden-ui');
+            }
+        }
+
+        function resumeGame() {
+            IS_PAUSED = false;
+            document.getElementById('ui-pause').classList.add('hidden-ui');
+        }
+
+        function saveGameProgress(showFeedback = false) {
+            localStorage.setItem('veyra_save', JSON.stringify(campaign));
+            checkSaveData();
+            if (showFeedback) {
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "JOGO SALVO!";
+                setTimeout(() => btn.innerText = oldText, 1200);
+            }
+        }
+
+        function quitToSelect() {
+            if (GAME_STATE === 'COMBAT') {
+                // Punição de Abandono: Tropas enviadas para combate morrem. 
+                // Ouro conquistado na batalha (baús) é perdido.
+                campaign.army = [...availableRoster]; 
+                pendingGold = 0; 
+                saveGameProgress();
+            }
+            resumeGame();
+            openSelectScreen();
+        }
+
+        function quitToMainMenu() {
+            if (GAME_STATE === 'COMBAT') {
+                // Punição de Abandono
+                campaign.army = [...availableRoster]; 
+                pendingGold = 0; // Ouro conquistado é perdido
+                saveGameProgress();
+            }
+            resumeGame();
+            GAME_STATE = 'MENU';
+            document.getElementById('ui-menu').classList.remove('hidden-ui');
+            document.getElementById('ui-select').classList.add('hidden-ui');
+            document.getElementById('ui-combat').classList.add('hidden-ui');
+            document.getElementById('ui-pause').classList.add('hidden-ui');
+        }
+
+        function closeIslandCard() {
+            selectedIslandId = null;
+            selectedIsland = null;
+            document.getElementById('island-card').classList.add('hidden-ui');
+        }
+
+        // SISTEMA DE MENSAGENS POP-UP
+        function showMessage(title, desc, callback) {
+            document.getElementById('ui-message').classList.remove('hidden-ui');
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-title').className = title === 'DERROTA' ? 'title-font text-3xl font-bold mb-2 text-red-700' : 'title-font text-3xl font-bold mb-2 text-[#3e2723]';
+            document.getElementById('msg-desc').innerText = desc;
+            window.msgCallback = callback;
+        }
+
+        function closeMessage() {
+            document.getElementById('ui-message').classList.add('hidden-ui');
+            if (window.msgCallback) {
+                let cb = window.msgCallback;
+                window.msgCallback = null;
+                cb();
+            }
+        }
+
+        function rotateMap() {
+            mapRotation = (mapRotation + 1) % 4;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (GAME_STATE === 'SELECT') {
+                drawCampaignMap();
+            }
+            else if (GAME_STATE === 'COMBAT') {
+                drawIsometricCombat();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        /* MAPA NÁUTICO CARTOGRÁFICO REAL */
+        function drawCampaignMap() {
+            // Fundo de Pergaminho Vintage
+            ctx.fillStyle = '#eaddc5'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grade Cartográfica de Coordenadas
+            ctx.strokeStyle = '#d5c4a1';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 60) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 60) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Ondas Marítimas Ilusórias no Mar
+            ctx.strokeStyle = '#cbba9a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 20; i++) {
+                let wx = ((i * 137) % canvas.width);
+                let wy = ((i * 89) % canvas.height);
+                ctx.beginPath();
+                ctx.arc(wx, wy, 8, 0.1, Math.PI - 0.1);
+                ctx.stroke();
+            }
+
+            // Rosa dos Ventos
+            let cx = canvas.width - 80;
+            let cy = 80;
+            ctx.fillStyle = '#3e2723';
+            ctx.beginPath(); ctx.moveTo(cx, cy - 30); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy + 30); ctx.lineTo(cx - 8, cy); ctx.fill();
+            ctx.fillStyle = '#8d6e63';
+            ctx.beginPath(); ctx.moveTo(cx - 30, cy); ctx.lineTo(cx, cy - 8); ctx.lineTo(cx + 30, cy); ctx.lineTo(cx, cy + 8); ctx.fill();
+            ctx.fillStyle = '#3e2723';
+            ctx.font = 'bold 14px Cinzel';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, cy - 40);
+
+            // Rotas Náuticas (Traços de Tinta)
+            ROUTES.forEach(route => {
+                let i1 = ISLANDS.find(i => i.id === route[0]);
+                let i2 = ISLANDS.find(i => i.id === route[1]);
+                if (i1 && i2) {
+                    let x1 = (i1.x / 100) * canvas.width;
+                    let y1 = (i1.y / 100) * canvas.height;
+                    let x2 = (i2.x / 100) * canvas.width;
+                    let y2 = (i2.y / 100) * canvas.height;
+
+                    let activeRoute = campaign.ownedIslands.includes(i1.id) && campaign.ownedIslands.includes(i2.id);
+
+                    ctx.strokeStyle = activeRoute ? '#3e2723' : '#a1887f';
+                    ctx.lineWidth = activeRoute ? 2 : 1;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            });
+            ctx.setLineDash([]);
+
+            // Desenhar Massa Terrestre Orgânica de cada Ilha (Formato Real)
+            ISLANDS.forEach(island => {
+                let x = (island.x / 100) * canvas.width;
+                let y = (island.y / 100) * canvas.height;
+                let isOwned = campaign.ownedIslands.includes(island.id);
+                let isSelectable = isIslandReachable(island.id);
+
+                // Gerar contorno cartográfico orgânico
+                drawOrganicIslandShape(x, y, island);
+
+                // Destaque de Seleção
+                if (selectedIslandId === island.id) {
+                    ctx.strokeStyle = '#b71c1c';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 42, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Insígnia do Bastião / Cidade
+                ctx.fillStyle = isOwned ? '#1b5e20' : (isSelectable ? '#b71c1c' : '#4e342e');
+                ctx.fillRect(x - 6, y - 6, 12, 12);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - 6, y - 6, 12, 12);
+
+                // Nome da Ilha num Cartucho Clássico
+                ctx.fillStyle = '#f4ecd8';
+                ctx.fillRect(x - 45, y + 22, 90, 16);
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - 45, y + 22, 90, 16);
+
+                ctx.fillStyle = selectedIslandId === island.id ? '#b71c1c' : '#3e2723';
+                ctx.font = 'bold 9px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(island.name.toUpperCase(), x, y + 33);
+            });
+        }
+
+        /* FUNÇÃO PARA DESENHAR ILHAS COM FORMATOS ORGÂNICOS REALISTAS */
+        function drawOrganicIslandShape(cx, cy, island) {
+            let isOwned = campaign.ownedIslands.includes(island.id);
+            let isSelectable = isIslandReachable(island.id);
+
+            // Cores do bioma no estilo mapa antigo
+            let landFill = isOwned ? '#c8e6c9' : (isSelectable ? '#ffcdd2' : '#d7ccc8');
+            let coastFill = '#e0d3b8';
+            let strokeColor = '#3e2723';
+
+            if (island.biome === 'desert') landFill = isOwned ? '#c8e6c9' : '#ffe0b2';
+            else if (island.biome === 'snow') landFill = isOwned ? '#c8e6c9' : '#e1f5fe';
+            else if (island.biome === 'volcanic') landFill = isOwned ? '#c8e6c9' : '#b0bec5';
+            else if (island.biome === 'forest') landFill = isOwned ? '#81c784' : '#a5d6a7';
+
+            let points = 12;
+            let baseRadius = 26 + (island.diff * 0.5);
+
+            // Desenhar Linha de Costa / Praia Externa
+            ctx.fillStyle = coastFill;
+            ctx.beginPath();
+            for (let i = 0; i < points; i++) {
+                let angle = (i / points) * Math.PI * 2;
+                let noise = Math.sin(angle * 3 + island.seed) * 8 + Math.cos(angle * 2 + island.seed) * 5;
+                let r = baseRadius + noise + 4;
+                let px = cx + Math.cos(angle) * r;
+                let py = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Desenhar Massa Terrestre Principal
+            ctx.fillStyle = landFill;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < points; i++) {
+                let angle = (i / points) * Math.PI * 2;
+                let noise = Math.sin(angle * 3 + island.seed) * 8 + Math.cos(angle * 2 + island.seed) * 5;
+                let r = baseRadius + noise;
+                let px = cx + Math.cos(angle) * r;
+                let py = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Desenhar Montanha Ilustrada no Centro
+            ctx.strokeStyle = '#5d4037';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy - 2); ctx.lineTo(cx, cy - 14); ctx.lineTo(cx + 8, cy - 2);
+            ctx.moveTo(cx + 2, cy - 2); ctx.lineTo(cx + 9, cy - 10); ctx.lineTo(cx + 16, cy - 2);
+            ctx.stroke();
+        }
+
+        function isIslandReachable(id) {
+            if (campaign.ownedIslands.includes(id)) return true;
+            return ROUTES.some(r => {
+                return (r[0] === id && campaign.ownedIslands.includes(r[1])) ||
+                       (r[1] === id && campaign.ownedIslands.includes(r[0]));
+            });
+        }
+
+        function handleCanvasClick(e) {
+            if (IS_PAUSED) return;
+
+            let rect = canvas.getBoundingClientRect();
+            let mx = e.clientX - rect.left;
+            let my = e.clientY - rect.top;
+
+            if (GAME_STATE === 'SELECT') {
+                ISLANDS.forEach(island => {
+                    let x = (island.x / 100) * canvas.width;
+                    let y = (island.y / 100) * canvas.height;
+                    let radius = 26 + (island.diff * 0.5);
+                    if (Math.hypot(mx - x, my - y) < radius + 10) {
+                        selectIsland(island);
+                    }
+                });
+            } 
+            else if (GAME_STATE === 'COMBAT' && (TURN_STATE === 'PLAYER' || TURN_STATE === 'DEPLOY')) {
+                handleCombatClick(mx, my);
+            }
+        }
+
+        function selectIsland(island) {
+            selectedIslandId = island.id;
+            selectedIsland = island;
+
+            let card = document.getElementById('island-card');
+            card.classList.remove('hidden-ui');
+
+            document.getElementById('card-name').innerText = island.name;
+            document.getElementById('card-biome').innerText = island.biome;
+            document.getElementById('card-desc').innerText = island.desc;
+            document.getElementById('card-diff').innerText = island.diff > 14 ? 'Alta' : 'Normal';
+            document.getElementById('card-garrison').innerText = island.garrison + ' Tropas';
+
+            let btn = document.getElementById('btn-attack');
+            if (campaign.ownedIslands.includes(island.id)) {
+                btn.innerText = 'TERRITÓRIO CONQUISTADO';
+                btn.disabled = true;
+                btn.className = "w-full py-3 bg-slate-300 text-slate-500 font-bold cursor-not-allowed";
+            } else if (!isIslandReachable(island.id)) {
+                btn.innerText = 'BLOQUEADO (SEM ROTA)';
+                btn.disabled = true;
+                btn.className = "w-full py-3 bg-slate-300 text-slate-500 font-bold cursor-not-allowed";
+            } else {
+                btn.innerText = 'INICIAR BATALHA';
+                btn.disabled = false;
+                btn.className = "w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold transition";
+            }
+        }
+
+        function confirmAttack() {
+            if (!selectedIsland) return;
+            startCombat(selectedIsland);
+        }
+
+        function startCombat(island) {
+            GAME_STATE = 'COMBAT';
+            TURN_STATE = 'DEPLOY';
+            pendingGold = 0;
+            availableRoster = [...campaign.army];
+            selectedDeployUnitIndex = -1;
+            deployedCount = 0; // Reinicia o contador de tropas colocadas
+
+            document.getElementById('ui-select').classList.add('hidden-ui');
+            document.getElementById('ui-combat').classList.remove('hidden-ui');
+            document.getElementById('combat-title').innerText = island.name.toUpperCase();
+            
+            // Layout da Fase de Posicionamento
+            document.getElementById('btn-pass-turn').classList.add('hidden-ui');
+            document.getElementById('turn-indicator').innerText = 'POSICIONAMENTO';
+            document.getElementById('deployment-panel').classList.remove('hidden-ui');
+
+            updateUnitInfoPanel(null); // Esconde o painel ao iniciar
+            mapRotation = 0; // Reinicia a rotação ao iniciar nova batalha
+            objectivePos = null; // Reinicia o brilho do objetivo
+            
+            generateCombatMap(island.diff, island.biome);
+            spawnEnemies(island);
+
+            // Destacar Quadrados Amarelos de Spawn
+            let playerSpawns = mapData.filter(t => t.x < 5 && t.type !== 'water' && t.type !== 'lava');
+            
+            // Baralhar e escalar os pontos de entrada de acordo com a dificuldade da ilha
+            playerSpawns.sort(() => Math.random() - 0.5);
+            let numSpawns = Math.max(4, Math.floor(island.diff / 2));
+            playerSpawns = playerSpawns.slice(0, numSpawns);
+            
+            highlightedTiles = playerSpawns.map(t => ({ x: t.x, y: t.y, isSpawn: true }));
+            
+            // Atualizar o limite de unidades que podem entrar nesta batalha
+            deployLimit = Math.min(availableRoster.length, numSpawns);
+            document.getElementById('deploy-limit-text').innerText = `TROPAS COLOCADAS: 0 / ${deployLimit}`;
+
+            renderDeploymentRoster();
+        }
+
+        function updateUnitInfoPanel(unit) {
+            let panel = document.getElementById('unit-info-panel');
+            if (!unit) {
+                panel.classList.add('hidden-ui');
+                return;
+            }
+            panel.classList.remove('hidden-ui');
+            
+            document.getElementById('unit-name').innerText = UNIT_NAMES[unit.type] || 'Soldado';
+            document.getElementById('unit-hp').innerText = unit.hp + '/' + unit.maxHp;
+            document.getElementById('unit-mov').innerText = unit.range; // Movimento
+            document.getElementById('unit-range').innerText = unit.atkRange;
+            document.getElementById('unit-dmg').innerText = unit.dmg;
+        }
+
+        function generateCombatMap(size, biome) {
+            mapData = [];
+            decorData = [];
+            itemsData = [];
+            let center = size / 2;
+            currentMapSize = size; // Guardar tamanho do mapa para a rotação
+
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    let d = Math.hypot(x - center, y - center);
+                    let noise = Math.sin(x * 0.8) * Math.cos(y * 0.8) * 1.2;
+                    let effDist = d + noise;
+
+                    // Definição da altura base do terreno
+                    let h = 0;
+                    if (effDist <= center * 0.85) h = 1;
+                    if (effDist <= center * 0.55) h = 2;
+                    if (effDist <= center * 0.30) h = 3;
+                    
+                    // Altura extra para bioma vulcânico
+                    if (biome === 'volcanic' && h === 3) h = 4;
+
+                    // Preenchimento contínuo: Fora do limite é SEMPRE água sólida (garante zero transparências/vãos)
+                    let type = 'water';
+
+                    if (effDist <= center) {
+                        type = 'sand';
+                        if (h === 1) type = 'grass';
+                        if (h >= 2) type = 'rock';
+
+                        if (biome === 'desert') {
+                            type = h === 0 ? 'sand' : h === 1 ? 'sand' : 'darkRock';
+                        } else if (biome === 'snow') {
+                            type = h === 0 ? 'ice' : h === 1 ? 'snow' : 'rock';
+                        } else if (biome === 'volcanic') {
+                            type = h === 0 ? 'lava' : h === 1 ? 'darkRock' : 'rock';
+                        } else if (biome === 'swamp') {
+                            type = h === 0 ? 'mud' : h === 1 ? 'grass' : 'mud';
+                        } else if (biome === 'forest') {
+                            type = h === 0 ? 'grass' : h === 1 ? 'grass' : 'rock';
+                        }
+                    }
+
+                    mapData.push({ x, y, z: h, type });
+
+                    // Elementos decorativos (árvores) apenas em terra firme
+                    if (type !== 'water' && type !== 'lava' && type !== 'ice' && h >= 1) {
+                        let treeChance = 0;
+                        if (biome === 'forest') treeChance = 0.35;
+                        else if (biome === 'normal') treeChance = 0.18;
+                        else if (biome === 'swamp') treeChance = 0.10;
+                        else if (biome === 'snow') treeChance = 0.05;
+
+                        if (Math.random() < treeChance) {
+                            decorData.push({ x, y, z: h, type: 'tree' });
+                        }
+                    }
+
+                    // Baús de tesouro
+                    if (type !== 'water' && type !== 'lava' && type !== 'ice' && h >= 1 && Math.random() < 0.04) {
+                        if (!decorData.find(d => d.x === x && d.y === y)) {
+                            itemsData.push({ x, y, z: h, type: 'chest' });
+                        }
+                    }
+                }
+            }
+
+            // Adicionar Fortaleza (Ponto de Conquista) no fundo do mapa inimigo
+            let validSpawns = mapData.filter(t => t.x > currentMapSize - 4 && t.type !== 'water' && t.type !== 'lava' && t.type !== 'ice');
+            if (validSpawns.length > 0) {
+                let fortTile = validSpawns[Math.floor(Math.random() * validSpawns.length)];
+                
+                // Limpa qualquer outra decoração (árvore) ou baú para destacar a fortaleza
+                decorData = decorData.filter(d => d.x !== fortTile.x || d.y !== fortTile.y);
+                itemsData = itemsData.filter(i => i.x !== fortTile.x || i.y !== fortTile.y);
+                
+                decorData.push({ x: fortTile.x, y: fortTile.y, z: fortTile.z, type: 'fort' });
+                
+                // Define a posição do objetivo para o anel dourado brilhar
+                objectivePos = { x: fortTile.x, y: fortTile.y };
+            }
+        }
+
+        function getBaseStats(type) {
+            switch(type) {
+                case 'warrior': return { hp: 6, maxHp: 6, range: 2, atkRange: 1, dmg: 2 };
+                case 'shield': return { hp: 8, maxHp: 8, range: 1, atkRange: 1, dmg: 1 };
+                case 'archer': return { hp: 3, maxHp: 3, range: 2, atkRange: 4, dmg: 2 };
+                case 'vanguard': return { hp: 4, maxHp: 4, range: 3, atkRange: 1, dmg: 3 };
+                default: return { hp: 5, maxHp: 5, range: 2, atkRange: 1, dmg: 1 };
+            }
+        }
+
+        function spawnEnemies(island) {
+            units = [];
+            let enemySpawns = mapData.filter(t => t.x > currentMapSize - 5 && t.type !== 'water' && t.type !== 'lava');
+            let eCount = island.garrison; 
+            
+            // Baralhar pontos de spawn para não ficarem sempre alinhados da mesma forma
+            enemySpawns.sort(() => Math.random() - 0.5);
+            
+            for(let i = 0; i < eCount; i++) {
+                if (enemySpawns[i]) {
+                    let type = i % 3 === 0 ? 'shield' : (i % 2 === 0 ? 'archer' : 'warrior');
+                    let stats = getBaseStats(type);
+                    units.push({ 
+                        id: 1000 + i, 
+                        type: type, 
+                        faction: 'enemy', 
+                        x: enemySpawns[i].x, 
+                        y: enemySpawns[i].y, 
+                        hp: stats.hp, 
+                        maxHp: stats.maxHp, 
+                        range: stats.range, 
+                        atkRange: stats.atkRange, 
+                        dmg: stats.dmg, 
+                        acted: false 
+                    });
+                }
+            }
+        }
+
+        function renderDeploymentRoster() {
+            let container = document.getElementById('deploy-roster');
+            container.innerHTML = '';
+            
+            if (availableRoster.length === 0) {
+                container.innerHTML = '<span class="text-xs font-bold text-slate-500">Sem mais tropas disponíveis.</span>';
+                return;
+            }
+
+            availableRoster.forEach((troopType, index) => {
+                let btn = document.createElement('button');
+                btn.className = `px-3 py-2 text-xs font-bold border-2 transition-all cursor-pointer ${selectedDeployUnitIndex === index ? 'bg-[#ffecb3] border-[#ff6f00] text-[#ff6f00]' : 'bg-slate-200 border-slate-400 text-slate-700 hover:bg-slate-300'}`;
+                btn.innerText = UNIT_NAMES[troopType].split(' ')[0];
+                btn.onclick = () => { 
+                    selectedDeployUnitIndex = selectedDeployUnitIndex === index ? -1 : index; 
+                    renderDeploymentRoster(); 
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function finishDeployment() {
+            let playerUnits = units.filter(u => u.faction === 'player');
+            if (playerUnits.length === 0) {
+                let btn = event.target;
+                let oldText = btn.innerText;
+                btn.innerText = "COLOQUE PELO MENOS 1 TROPA!";
+                btn.classList.add("bg-red-700");
+                setTimeout(() => { btn.innerText = oldText; btn.classList.remove("bg-red-700"); }, 1200);
+                return;
+            }
+            
+            TURN_STATE = 'PLAYER';
+            highlightedTiles = []; // Limpa os destaques de colocação
+            document.getElementById('deployment-panel').classList.add('hidden-ui');
+            document.getElementById('btn-pass-turn').classList.remove('hidden-ui');
+            document.getElementById('turn-indicator').innerText = 'TURNO DO JOGADOR';
+        }
+
+        /* FUNÇÃO PARA CALCULAR COORDENADAS BASEADO NA ROTAÇÃO */
+        function getRenderCoords(x, y) {
+            let rx = x, ry = y;
+            if (mapRotation === 1) {
+                rx = currentMapSize - 1 - y;
+                ry = x;
+            } else if (mapRotation === 2) {
+                rx = currentMapSize - 1 - x;
+                ry = currentMapSize - 1 - y;
+            } else if (mapRotation === 3) {
+                rx = y;
+                ry = currentMapSize - 1 - x;
+            }
+            return { rx, ry };
+        }
+
+        /* RENDERIZADOR COM SISTEMA DE TRANSPARÊNCIA E ROTAÇÃO */
+        function drawIsometricCombat() {
+            let offsetX = canvas.width / 2;
+            let offsetY = canvas.height / 3;
+
+            let renderPipeline = [];
+
+            mapData.forEach(tile => renderPipeline.push({ ...tile, kind: 'block' }));
+            decorData.forEach(decor => renderPipeline.push({ ...decor, kind: 'decor' }));
+            itemsData.forEach(item => renderPipeline.push({ ...item, kind: 'item' }));
+            units.forEach(unit => {
+                let ground = mapData.find(t => t.x === unit.x && t.y === unit.y);
+                let z = ground ? ground.z : 0;
+                renderPipeline.push({ ...unit, z: z, kind: 'unit' });
+            });
+
+            // Ordenação restrita com base na rotação atual da câmara
+            renderPipeline.sort((a, b) => {
+                let rA = getRenderCoords(a.x, a.y);
+                let rB = getRenderCoords(b.x, b.y);
+                let depthA = rA.rx + rA.ry + (a.z * 0.1);
+                let depthB = rB.rx + rB.ry + (b.z * 0.1);
+                if (depthA === depthB) {
+                    let order = { 'block': 0, 'item': 1, 'decor': 2, 'unit': 3 };
+                    return order[a.kind] - order[b.kind];
+                }
+                return depthA - depthB;
+            });
+
+            renderPipeline.forEach(obj => {
+                let rc = getRenderCoords(obj.x, obj.y);
+                let isoX = offsetX + (rc.rx - rc.ry) * (TILE_WIDTH / 2);
+                let isoY = offsetY + (rc.rx + rc.ry) * (TILE_HEIGHT / 2) - (obj.z * BLOCK_DEPTH);
+
+                // Lógica de Visibilidade Ajustada (Apenas oculta quando há seleção ativa cobrindo atrás)
+                let isOccluding = false;
+                if (obj.kind === 'block' && obj.z > 0) {
+                    // Só torna transparente se houver UMA UNIDADE SELECCIONADA e ela/seus movimentos estiverem escondidos atrás
+                    if (selectedUnit) {
+                        isOccluding = units.some(u => {
+                            let rU = getRenderCoords(u.x, u.y);
+                            let dx = rc.rx - rU.rx;
+                            let dy = rc.ry - rU.ry;
+                            return (dx >= 0 && dy >= 0 && (dx + dy > 0) && (dx + dy <= 2));
+                        });
+
+                        if (!isOccluding && highlightedTiles.length > 0) {
+                            isOccluding = highlightedTiles.some(h => {
+                                let rH = getRenderCoords(h.x, h.y);
+                                let dx = rc.rx - rH.rx;
+                                let dy = rc.ry - rH.ry;
+                                return (dx >= 0 && dy >= 0 && (dx + dy > 0) && (dx + dy <= 2));
+                            });
+                        }
+                    }
+                }
+
+                if (obj.kind === 'block') {
+                    if (isOccluding) {
+                        ctx.globalAlpha = 0.35; // Transparência suave somente durante seleção
+                    }
+                    drawBlock(isoX, isoY, obj.type);
+                    ctx.globalAlpha = 1.0;
+
+                    let isHigh = highlightedTiles.find(h => h.x === obj.x && h.y === obj.y);
+                    if (isHigh) {
+                        if (isHigh.isTarget) ctx.fillStyle = 'rgba(220, 38, 38, 0.65)'; // Ataque
+                        else if (isHigh.isMerge) ctx.fillStyle = 'rgba(16, 185, 129, 0.65)'; // Agrupar (Verde)
+                        else if (isHigh.isSpawn) ctx.fillStyle = 'rgba(245, 158, 11, 0.7)'; // Colocação (Amarelo)
+                        else ctx.fillStyle = 'rgba(37, 99, 235, 0.65)'; // Movimento
+
+                        ctx.beginPath();
+                        ctx.moveTo(isoX, isoY - TILE_HEIGHT / 2);
+                        ctx.lineTo(isoX + TILE_WIDTH / 2, isoY);
+                        ctx.lineTo(isoX, isoY + TILE_HEIGHT / 2);
+                        ctx.lineTo(isoX - TILE_WIDTH / 2, isoY);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+                else if (obj.kind === 'decor') {
+                    drawDecor(isoX, isoY, obj);
+                }
+                else if (obj.kind === 'item') {
+                    drawItem(isoX, isoY);
+                }
+                else if (obj.kind === 'unit') {
+                    drawSquad(isoX, isoY, obj);
+                }
+            });
+            
+            // Destaque visual permanente no Forte (Objetivo)
+            if (objectivePos) {
+                let rc = getRenderCoords(objectivePos.x, objectivePos.y);
+                let ground = mapData.find(t => t.x === objectivePos.x && t.y === objectivePos.y);
+                if (ground) {
+                    let isoX = offsetX + (rc.rx - rc.ry) * (TILE_WIDTH / 2);
+                    let isoY = offsetY + (rc.rx + rc.ry) * (TILE_HEIGHT / 2) - (ground.z * BLOCK_DEPTH);
+                    
+                    ctx.fillStyle = 'rgba(250, 204, 21, 0.3)'; // Brilho dourado
+                    ctx.beginPath();
+                    ctx.moveTo(isoX, isoY - TILE_HEIGHT / 2);
+                    ctx.lineTo(isoX + TILE_WIDTH / 2, isoY);
+                    ctx.lineTo(isoX, isoY + TILE_HEIGHT / 2);
+                    ctx.lineTo(isoX - TILE_WIDTH / 2, isoY);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawBlock(x, y, type) {
+            let topColor = COLORS[type + 'Top'] || COLORS.grassTop;
+            let leftColor = COLORS[type + 'Left'] || COLORS.grassLeft;
+            let rightColor = COLORS[type + 'Right'] || COLORS.grassRight;
+
+            ctx.fillStyle = topColor;
+            ctx.beginPath();
+            ctx.moveTo(x, y - TILE_HEIGHT / 2);
+            ctx.lineTo(x + TILE_WIDTH / 2, y);
+            ctx.lineTo(x, y + TILE_HEIGHT / 2);
+            ctx.lineTo(x - TILE_WIDTH / 2, y);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = leftColor;
+            ctx.beginPath();
+            ctx.moveTo(x - TILE_WIDTH / 2, y);
+            ctx.lineTo(x, y + TILE_HEIGHT / 2);
+            ctx.lineTo(x, y + TILE_HEIGHT / 2 + BLOCK_DEPTH);
+            ctx.lineTo(x - TILE_WIDTH / 2, y + BLOCK_DEPTH);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = rightColor;
+            ctx.beginPath();
+            ctx.moveTo(x, y + TILE_HEIGHT / 2);
+            ctx.lineTo(x + TILE_WIDTH / 2, y);
+            ctx.lineTo(x + TILE_WIDTH / 2, y + BLOCK_DEPTH);
+            ctx.lineTo(x, y + TILE_HEIGHT / 2 + BLOCK_DEPTH);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawDecor(x, y, decor) {
+            if (!decor || decor.type === 'tree') {
+                ctx.fillStyle = '#064e3b';
+                ctx.beginPath();
+                ctx.arc(x, y - 8, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#047857';
+                ctx.beginPath();
+                ctx.arc(x, y - 15, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (decor.type === 'fort') {
+                // Desenhar Fortaleza Isométrica Melhorada
+                let h = 28; // Altura da torre
+                let w = 18; // Largura isométrica
+                
+                // Face Esquerda (Sombra)
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - w, y - w*0.5);
+                ctx.lineTo(x - w, y - w*0.5 - h);
+                ctx.lineTo(x, y - h);
+                ctx.fill();
+                
+                // Face Direita (Luz)
+                ctx.fillStyle = '#64748b';
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + w, y - w*0.5);
+                ctx.lineTo(x + w, y - w*0.5 - h);
+                ctx.lineTo(x, y - h);
+                ctx.fill();
+                
+                // Topo (Telhado/Amurada)
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.moveTo(x, y - h);
+                ctx.lineTo(x - w, y - w*0.5 - h);
+                ctx.lineTo(x, y - w - h);
+                ctx.lineTo(x + w, y - w*0.5 - h);
+                ctx.fill();
+
+                // Interior do telhado (profundidade)
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.moveTo(x, y - h - 2);
+                ctx.lineTo(x - w + 3, y - w*0.5 - h - 1);
+                ctx.lineTo(x, y - w - h + 2);
+                ctx.lineTo(x + w - 3, y - w*0.5 - h - 1);
+                ctx.fill();
+
+                // Porta (Arco Pontiagudo)
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.moveTo(x, y - 2);
+                ctx.lineTo(x - 6, y - 5);
+                ctx.lineTo(x - 6, y - 12);
+                ctx.lineTo(x, y - 16);
+                ctx.lineTo(x + 6, y - 12);
+                ctx.lineTo(x + 6, y - 5);
+                ctx.fill();
+
+                // Estandarte Inimigo Gigante
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y - h - 5);
+                ctx.lineTo(x, y - h - 40);
+                ctx.stroke();
+
+                ctx.fillStyle = '#dc2626'; // Vermelho vivo
+                ctx.beginPath();
+                ctx.moveTo(x, y - h - 40);
+                ctx.lineTo(x + 18, y - h - 34); // Bandeira a ondular
+                ctx.lineTo(x, y - h - 28);
+                ctx.fill();
+            }
+        }
+
+        function drawItem(x, y) {
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(x - 5, y - 7, 10, 8);
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(x - 5, y - 5, 10, 3);
+        }
+
+        function drawSquad(x, y, unit) {
+            let color = unit.faction === 'player' ? '#1e40af' : '#991b1b';
+            let bannerColor = unit.faction === 'player' ? COLORS.playerBanner : COLORS.enemyBanner;
+            
+            let ground = mapData.find(t => t.x === unit.x && t.y === unit.y);
+            let inWater = ground && ground.type === 'water';
+
+            if (inWater) {
+                // Desenhar Barco de Madeira (Visual Melhorado e Isométrico)
+                ctx.fillStyle = '#4e342e'; // Casco escuro
+                ctx.beginPath();
+                ctx.moveTo(x - 18, y - 2);
+                ctx.lineTo(x, y + 10); // Proa pontiaguda
+                ctx.lineTo(x + 18, y - 2);
+                ctx.lineTo(x, y - 10); // Popa
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = '#795548'; // Convés de madeira
+                ctx.beginPath();
+                ctx.moveTo(x - 14, y - 2);
+                ctx.lineTo(x, y + 6);
+                ctx.lineTo(x + 14, y - 2);
+                ctx.lineTo(x, y - 6);
+                ctx.closePath();
+                ctx.fill();
+
+                // Linhas das tábuas no barco
+                ctx.strokeStyle = '#5d4037';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x - 7, y - 2); ctx.lineTo(x + 7, y + 3);
+                ctx.moveTo(x - 7, y - 5); ctx.lineTo(x + 7, y);
+                ctx.stroke();
+            } else {
+                // Sombra Normal
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(x, y, 14, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            let yOffset = inWater ? -3 : 0; // Levanta as tropas para ficarem dentro do barco
+
+            const offsets = [[-5, -2], [5, 0], [0, 3]];
+            offsets.forEach((off, index) => {
+                let px = x + off[0];
+                let py = y + off[1] - 4 + yOffset;
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(px, py, 4.5, 0, Math.PI * 2); 
+                ctx.fill();
+                
+                if (unit.type === 'warrior') {
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.arc(px + 3, py + 1, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                } 
+                else if (unit.type === 'shield') {
+                    ctx.fillStyle = '#475569';
+                    ctx.fillRect(px + 2, py - 3, 3, 7);
+                } 
+                else if (unit.type === 'archer') {
+                    ctx.strokeStyle = '#78350f';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.arc(px + 2, py + 1, 3.5, -Math.PI / 2, Math.PI / 2);
+                    ctx.stroke();
+                }
+                else if (unit.type === 'vanguard') {
+                    ctx.fillStyle = '#d97706';
+                    ctx.fillRect(px - 3, py - 2, 2, 4);
+                }
+
+                ctx.fillStyle = '#f8fafc'; 
+                ctx.beginPath();
+                ctx.arc(px, py - 3, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Mastro do Estandarte
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y + yOffset);
+            ctx.lineTo(x - 8, y - 26 + yOffset);
+            ctx.stroke();
+
+            ctx.fillStyle = bannerColor;
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y - 26 + yOffset);
+            ctx.lineTo(x + 4, y - 21 + yOffset);
+            ctx.lineTo(x - 8, y - 16 + yOffset);
+            ctx.fill();
+
+            // Anel Tático
+            if (selectedUnit && selectedUnit.id === unit.id) {
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(x, y + (inWater ? 2 : 0), 18, 9, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Barra de HP Limpa
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(x - 11, y - 32 + yOffset, 22, 4);
+            ctx.fillStyle = unit.faction === 'player' ? '#16a34a' : '#dc2626';
+            ctx.fillRect(x - 10, y - 31 + yOffset, (unit.hp / unit.maxHp) * 20, 2);
+        }
+
+        function handleCombatClick(mx, my) {
+            let offsetX = canvas.width / 2;
+            let offsetY = canvas.height / 3;
+
+            let clickedTile = null;
+            let clickedUnit = null;
+
+            // 1. Prioridade Total: Verifica primeiro se clicámos diretamente num soldado
+            let renderUnits = [...units].sort((a, b) => {
+                let groundA = mapData.find(t => t.x === a.x && t.y === a.y);
+                let groundB = mapData.find(t => t.x === b.x && t.y === b.y);
+                let rA = getRenderCoords(a.x, a.y);
+                let rB = getRenderCoords(b.x, b.y);
+                let depthA = rA.rx + rA.ry + ((groundA ? groundA.z : 0) * 0.1);
+                let depthB = rB.rx + rB.ry + ((groundB ? groundB.z : 0) * 0.1);
+                return depthB - depthA; 
+            });
+
+            for (let u of renderUnits) {
+                let ground = mapData.find(t => t.x === u.x && t.y === u.y);
+                let z = ground ? ground.z : 0;
+                let rU = getRenderCoords(u.x, u.y);
+                let isoX = offsetX + (rU.rx - rU.ry) * (TILE_WIDTH / 2);
+                let isoY = offsetY + (rU.rx + rU.ry) * (TILE_HEIGHT / 2) - (z * BLOCK_DEPTH);
+                
+                // Área de clique da unidade
+                if (Math.hypot(mx - isoX, my - isoY) < 24) {
+                    clickedUnit = u;
+                    clickedTile = ground;
+                    break;
+                }
+            }
+
+            // 2. Prioridade Secundária: Tiles Destacados de Movimento/Ataque
+            if (!clickedTile && highlightedTiles.length > 0) {
+                let renderHigh = [...highlightedTiles].sort((a, b) => {
+                    let groundA = mapData.find(t => t.x === a.x && t.y === a.y);
+                    let groundB = mapData.find(t => t.x === b.x && t.y === b.y);
+                    let rA = getRenderCoords(a.x, a.y);
+                    let rB = getRenderCoords(b.x, b.y);
+                    let depthA = groundA ? rA.rx + rA.ry + groundA.z * 0.1 : 0;
+                    let depthB = groundB ? rB.rx + rB.ry + groundB.z * 0.1 : 0;
+                    return depthB - depthA;
+                });
+                
+                for (let h of renderHigh) {
+                    let ground = mapData.find(t => t.x === h.x && t.y === h.y);
+                    if (!ground) continue;
+                    let rH = getRenderCoords(ground.x, ground.y);
+                    let isoX = offsetX + (rH.rx - rH.ry) * (TILE_WIDTH / 2);
+                    let isoY = offsetY + (rH.rx + rH.ry) * (TILE_HEIGHT / 2) - (ground.z * BLOCK_DEPTH);
+
+                    if (Math.hypot(mx - isoX, my - isoY) < 24) {
+                        clickedTile = ground;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Última Prioridade: Chão normal/Montanhas
+            if (!clickedTile) {
+                let renderList = [...mapData].sort((a, b) => {
+                    let rA = getRenderCoords(a.x, a.y);
+                    let rB = getRenderCoords(b.x, b.y);
+                    return (rB.rx + rB.ry + b.z * 0.1) - (rA.rx + rA.ry + a.z * 0.1);
+                });
+                for (let tile of renderList) {
+                    let rT = getRenderCoords(tile.x, tile.y);
+                    let isoX = offsetX + (rT.rx - rT.ry) * (TILE_WIDTH / 2);
+                    let isoY = offsetY + (rT.rx + rT.ry) * (TILE_HEIGHT / 2) - (tile.z * BLOCK_DEPTH);
+
+                    if (Math.hypot(mx - isoX, my - isoY) < 24) {
+                        clickedTile = tile;
+                        break;
+                    }
+                }
+            }
+
+            if (!clickedTile) return;
+
+            // MODO DE POSICIONAMENTO (DEPLOYMENT INTERCEPT)
+            if (TURN_STATE === 'DEPLOY') {
+                if (selectedDeployUnitIndex >= 0 && selectedDeployUnitIndex < availableRoster.length) {
+                    let isSpawn = highlightedTiles.find(h => h.x === clickedTile.x && h.y === clickedTile.y && h.isSpawn);
+                    let isOccupied = units.some(u => u.x === clickedTile.x && u.y === clickedTile.y);
+                    
+                    if (isSpawn && !isOccupied) {
+                        if (deployedCount >= deployLimit) {
+                            let textEl = document.getElementById('deploy-limit-text');
+                            textEl.classList.add("bg-red-200", "text-red-700", "border-red-400");
+                            setTimeout(() => textEl.classList.remove("bg-red-200", "text-red-700", "border-red-400"), 800);
+                            return;
+                        }
+
+                        let type = availableRoster[selectedDeployUnitIndex];
+                        let hpBonus = campaign.upgrades.hp || 0;
+                        let stats = getBaseStats(type);
+                        
+                        units.push({
+                            id: Date.now() + Math.random(),
+                            type: type,
+                            faction: 'player',
+                            x: clickedTile.x,
+                            y: clickedTile.y,
+                            hp: stats.hp + hpBonus,
+                            maxHp: stats.maxHp + hpBonus,
+                            range: stats.range,
+                            atkRange: stats.atkRange,
+                            dmg: stats.dmg,
+                            acted: false
+                        });
+                        
+                        deployedCount++;
+                        document.getElementById('deploy-limit-text').innerText = `TROPAS COLOCADAS: ${deployedCount} / ${deployLimit}`;
+                        
+                        availableRoster.splice(selectedDeployUnitIndex, 1);
+                        selectedDeployUnitIndex = -1;
+                        renderDeploymentRoster();
+                    }
+                }
+                return; // Bloqueia regras normais de combate nesta fase
+            }
+
+            // Garante o alinhamento da unidade com o tile (se foi clicado no chão e havia tropa lá)
+            if (!clickedUnit) {
+                clickedUnit = units.find(u => u.x === clickedTile.x && u.y === clickedTile.y);
+            }
+
+            if (selectedUnit) {
+                let isHigh = highlightedTiles.find(h => h.x === clickedTile.x && h.y === clickedTile.y);
+                if (isHigh) {
+                    if (isHigh.isTarget && clickedUnit) {
+                        clickedUnit.hp -= selectedUnit.dmg; // Usar o dano da unidade
+                        selectedUnit.acted = true;
+                        if (clickedUnit.hp <= 0) {
+                            units = units.filter(u => u !== clickedUnit);
+                        }
+                    } else if (isHigh.isMerge && clickedUnit) {
+                        // AGRUPAR TROPAS (Merge)
+                        clickedUnit.hp = Math.min(clickedUnit.maxHp, clickedUnit.hp + selectedUnit.hp);
+                        clickedUnit.acted = true; // A tropa resultante conta como tendo agido
+                        units = units.filter(u => u.id !== selectedUnit.id); // Destrói a unidade que se moveu
+                    } else {
+                        selectedUnit.x = clickedTile.x;
+                        selectedUnit.y = clickedTile.y;
+                        selectedUnit.acted = true;
+
+                        // Apanhar baús de ouro
+                        let itemIdx = itemsData.findIndex(i => i.x === clickedTile.x && i.y === clickedTile.y);
+                        if (itemIdx !== -1) {
+                            itemsData.splice(itemIdx, 1);
+                            pendingGold += 25; // O ouro é guardado temporariamente até venceres!
+                        }
+
+                        // VERIFICAR CONQUISTA DA FORTALEZA
+                        let fortIdx = decorData.findIndex(d => d.type === 'fort' && d.x === clickedTile.x && d.y === clickedTile.y);
+                        if (fortIdx !== -1) {
+                            // Conquistou a fortaleza! Forçar a vitória eliminando todos os inimigos
+                            units = units.filter(u => u.faction === 'player');
+                        }
+                    }
+                    selectedUnit = null;
+                    highlightedTiles = [];
+                    updateUnitInfoPanel(null); // Esconder painel após ação
+                    checkCombatEnd();
+                } else {
+                    selectedUnit = null;
+                    highlightedTiles = [];
+                    updateUnitInfoPanel(null); // Esconder painel se clicar noutro local
+                }
+            } else if (clickedUnit && clickedUnit.faction === 'player' && !clickedUnit.acted) {
+                selectedUnit = clickedUnit;
+                calculateHighlights(clickedUnit);
+                updateUnitInfoPanel(clickedUnit); // Mostrar painel com dados da unidade
+            }
+        }
+
+        function calculateHighlights(unit) {
+            highlightedTiles = [];
+            let currentTile = mapData.find(t => t.x === unit.x && t.y === unit.y);
+            let inWater = currentTile && currentTile.type === 'water';
+            let maxMove = inWater ? 1 : unit.range; // Movimento com penalidade de água
+
+            mapData.forEach(tile => {
+                let d = Math.abs(tile.x - unit.x) + Math.abs(tile.y - unit.y);
+                let targetUnit = units.find(u => u.x === tile.x && u.y === tile.y);
+
+                if (d > 0) {
+                    if (targetUnit) {
+                        if (targetUnit.faction === 'enemy' && d <= unit.atkRange) {
+                            // Alvo Inimigo
+                            highlightedTiles.push({ x: tile.x, y: tile.y, isTarget: true });
+                        } else if (targetUnit.faction === 'player' && targetUnit.id !== unit.id && targetUnit.type === unit.type && d <= maxMove) {
+                            // Agrupar Tropas (Merge)
+                            let currentZ = currentTile ? currentTile.z : 0;
+                            if (tile.z - currentZ <= 1) { 
+                                highlightedTiles.push({ x: tile.x, y: tile.y, isTarget: false, isMerge: true });
+                            }
+                        }
+                    } else if (!targetUnit && tile.type !== 'lava' && d <= maxMove) {
+                        // Movimento Normal
+                        let currentZ = currentTile ? currentTile.z : 0;
+                        if (tile.z - currentZ <= 1) { 
+                            highlightedTiles.push({ x: tile.x, y: tile.y, isTarget: false, isMerge: false });
+                        }
+                    }
+                }
+            });
+        }
+
+        function endPlayerTurn() {
+            TURN_STATE = 'ENEMY';
+            document.getElementById('turn-indicator').innerText = 'TURNO INIMIGO';
+            document.getElementById('turn-indicator').className = 'px-4 py-2 bg-red-100 border-2 border-red-900 text-red-900 font-bold text-xs uppercase transition-colors';
+
+            setTimeout(processEnemyTurn, 800);
+        }
+
+        function processEnemyTurn() {
+            let enemyUnits = units.filter(u => u.faction === 'enemy');
+            let playerUnits = units.filter(u => u.faction === 'player');
+
+            enemyUnits.forEach(enemy => {
+                if (playerUnits.length > 0) {
+                    let target = playerUnits.reduce((prev, curr) => {
+                        let dPrev = Math.abs(enemy.x - prev.x) + Math.abs(enemy.y - prev.y);
+                        let dCurr = Math.abs(enemy.x - curr.x) + Math.abs(enemy.y - curr.y);
+                        return dCurr < dPrev ? curr : prev;
+                    });
+
+                    let d = Math.abs(enemy.x - target.x) + Math.abs(enemy.y - target.y);
+
+                    if (d <= enemy.atkRange) {
+                        target.hp -= enemy.dmg;
+                        if (target.hp <= 0) {
+                            units = units.filter(u => u !== target);
+                            playerUnits = playerUnits.filter(u => u !== target);
+                        }
+                    } else {
+                        let dx = Math.sign(target.x - enemy.x);
+                        let dy = Math.sign(target.y - enemy.y);
+                        
+                        let newX = enemy.x + dx;
+                        let newY = enemy.y + dy;
+
+                        let moveTile = mapData.find(t => t.x === newX && t.y === newY);
+                        let currentTile = mapData.find(t => t.x === enemy.x && t.y === enemy.y);
+                        let isOccupied = units.some(u => u.x === newX && u.y === newY);
+
+                        // IA agora sabe nadar/usar barco (apenas lava bloqueia)
+                        if (moveTile && !isOccupied && moveTile.type !== 'lava') {
+                            let hDiff = moveTile.z - (currentTile ? currentTile.z : 0);
+                            if (hDiff <= 1) { 
+                                enemy.x = newX;
+                                enemy.y = newY;
+                            }
+                        }
+                    }
+                }
+            });
+
+            units.forEach(u => u.acted = false);
+            TURN_STATE = 'PLAYER';
+            document.getElementById('turn-indicator').innerText = 'TURNO DO JOGADOR';
+            document.getElementById('turn-indicator').className = 'px-4 py-2 bg-slate-100 border-2 border-slate-900 text-slate-900 font-bold text-xs uppercase transition-colors';
+
+            checkCombatEnd();
+        }
+
+        function checkCombatEnd() {
+            let enemies = units.filter(u => u.faction === 'enemy');
+            let players = units.filter(u => u.faction === 'player');
+
+            // Verifica se a fortaleza (Forte) foi conquistada
+            let fort = decorData.find(d => d.type === 'fort');
+            let fortConquered = fort && players.some(p => p.x === fort.x && p.y === fort.y);
+
+            if (enemies.length === 0 || fortConquered) {
+                // VITÓRIA
+                if (!campaign.ownedIslands.includes(selectedIsland.id)) {
+                    campaign.ownedIslands.push(selectedIsland.id);
+                }
+                
+                let earnedGold = 50 + pendingGold; // Recompensa base + Baús
+                campaign.gold += earnedGold;
+                pendingGold = 0;
+                
+                // MANTÉM O EXÉRCITO INTACTO PARA A PRÓXIMA BATALHA
+                // Tropas caídas ou agrupadas nesta batalha são curadas no acampamento.
+                saveGameProgress();
+                
+                // Mostrar a mensagem de vitória antes de voltar ao ecrã
+                showMessage("VITÓRIA!", `O setor foi assegurado e recolheste ${earnedGold} de Ouro!`, openSelectScreen);
+
+            } else if (players.length === 0) {
+                // DERROTA
+                pendingGold = 0; // Perdes os baús conquistados na batalha
+                
+                // Em vez de morrerem, as tropas retiram-se e manténs o exército original da campanha
+                saveGameProgress();
+                
+                // Mostrar a mensagem de derrota
+                showMessage("DERROTA", "As tuas tropas foram forçadas a retirar-se. O espólio foi perdido.", openSelectScreen);
+            }
+        }
+    </script>
 </body>
 </html>
