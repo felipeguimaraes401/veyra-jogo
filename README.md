@@ -3,8 +3,10 @@
 > Jogo 2D/2.5D de estratégia e tática por turnos desenvolvido como projeto prático para a avaliação **AF** da disciplina **Programação Avançada e Estrutura de Dados** (Prof. Adriano Felix Valente).
 
 ## 👥 Integrantes do Grupo
+- **Carlos Eduardo Teixeira**
 - **Felipe Dantas**
 - **Gabriel Gomes**
+- **Gabriel Lizeo**
 - **Henrique Dante**
 
 ---
